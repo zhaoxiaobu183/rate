@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>夯到拉评级系统</title>
+    <style>
+        :root {
+            --level-0: #e74c3c;
+            --level-1: #e67e22;
+            --level-2: #f1c40f;
+            --level-3: #2ecc71;
+            --level-4: #3498db;
+            --bg-light: #f8f9fa;
+            --bg-white: #ffffff;
+            --text-dark: #2c3e50;
+            --text-gray: #7f8c8d;
+            --border-color: #e9ecef;
+            --cyber-blue: #00f3ff;
+            --cyber-pink: #ff00ff;
+            --cyber-purple: #9d00ff;
+            --cyber-dark: #0a0e17;
+            --cyber-blue-purple: #6a11cb;
+            --cyber-light-purple: #8a2be2;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            color: var(--text-dark);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+        }
+        
+        /* 16:9全屏容器 */
+        .container {
+            width: 100vw;
+            height: 56.25vw; /* 16:9 aspect ratio: height = width * 9/16 */
+            max-height: 100vh;
+            max-width: 177.78vh; /* 16:9 aspect ratio: width = height * 16/9 */
+            background: var(--bg-white);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        
+        /* 顶部主标题 - 蓝紫色赛博朋克风格 */
+        .main-header {
+            height: 36px;
+            background: linear-gradient(90deg, 
+                var(--cyber-blue-purple) 0%, 
+                var(--cyber-light-purple) 50%, 
+                #6a11cb 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+            overflow: hidden;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 
+                0 0 5px rgba(255, 255, 255, 0.8),
+                0 0 10px rgba(173, 216, 230, 0.6),
+                0 0 15px rgba(135, 206, 250, 0.4);
+            box-shadow: 
+                0 2px 15px rgba(138, 43, 226, 0.5),
+                inset 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+        
+        /* 赛博朋克标题装饰元素 */
+        .main-header::before,
+        .main-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        .main-header::before {
+            background: 
+                linear-gradient(90deg, 
+                    transparent 0%, 
+                    rgba(255, 255, 255, 0.15) 50%, 
+                    transparent 100%);
+            animation: scanline 3s linear infinite;
+        }
+        
+        .main-header::after {
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(255, 255, 255, 0.1) 2px,
+                    rgba(255, 255, 255, 0.1) 4px
+                );
+            opacity: 0.3;
+        }
+        
+        /* 标题两侧的装饰 - 霓虹蓝边 */
+        .header-decoration {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 20px;
+            background: linear-gradient(90deg, var(--cyber-blue) 0%, rgba(0, 243, 255, 0.7) 100%);
+            box-shadow: 
+                0 0 8px var(--cyber-blue),
+                0 0 15px var(--cyber-blue);
+        }
+        
+        .header-decoration.left {
+            left: 0;
+            clip-path: polygon(0 0, 100% 0, 70% 100%, 0 100%);
+        }
+        
+        .header-decoration.right {
+            right: 0;
+            clip-path: polygon(30% 0, 100% 0, 100% 100%, 0 100%);
+        }
+        
+        /* 评级区域 - 占据剩余高度，确保夯到拉比例不变 */
+        .rating-levels {
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 68px); /* 减去标题和底部高度 */
+            flex: 1;
+        }
+        
+        .level {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .level:last-child {
+            border-bottom: none;
+        }
+        
+        /* 标题行 - 紧凑高度 */
+        .level-header {
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            height: 32px;
+            flex-shrink: 0;
+            position: relative;
+        }
+        
+        .level-0 .level-header {
+            background: linear-gradient(90deg, var(--level-0) 0%, #ff6b6b 100%);
+        }
+        
+        .level-1 .level-header {
+            background: linear-gradient(90deg, var(--level-1) 0%, #ff9a3d 100%);
+        }
+        
+        .level-2 .level-header {
+            background: linear-gradient(90deg, var(--level-2) 0%, #ffd93d 100%);
+            color: #333;
+        }
+        
+        .level-3 .level-header {
+            background: linear-gradient(90deg, var(--level-3) 0%, #6bcf7f 100%);
+        }
+        
+        .level-4 .level-header {
+            background: linear-gradient(90deg, var(--level-4) 0%, #4d8af0 100%);
+        }
+        
+        .level-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+        
+        .level-2 .level-icon {
+            background: rgba(255, 255, 255, 0.3);
+            color: #333;
+        }
+        
+        .level-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            flex-grow: 1;
+            white-space: nowrap;
+        }
+        
+        .level-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+        
+        .level-2 .level-count {
+            background: rgba(255, 255, 255, 0.3);
+            color: #333;
+        }
+        
+        /* 内容区域 - 紧凑布局 */
+        .level-content {
+            flex: 1;
+            padding: 6px 10px;
+            overflow: hidden;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .images-container {
+            display: flex;
+            gap: 8px;
+            height: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            align-items: center;
+        }
+        
+        /* 图片格子尺寸 */
+        .image-box, .upload-box {
+            width: 85px;
+            height: 85px;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            border: 2px dashed var(--border-color);
+            background: var(--bg-light);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .upload-box {
+            border-style: dashed;
+        }
+        
+        .image-box {
+            border-style: solid;
+            border-color: var(--border-color);
+        }
+        
+        .upload-box:hover {
+            border-color: var(--level-4);
+            background: rgba(52, 152, 219, 0.05);
+            transform: translateY(-2px);
+        }
+        
+        .upload-box input {
+            display: none;
+        }
+        
+        .upload-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            color: var(--text-gray);
+        }
+        
+        .upload-icon {
+            font-size: 1.8rem;
+            margin-bottom: 2px;
+            color: var(--level-4);
+            transition: all 0.3s ease;
+        }
+        
+        .upload-box:hover .upload-icon {
+            transform: scale(1.1);
+            color: var(--level-4);
+        }
+        
+        .upload-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .image-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        
+        .image-box:hover .image-preview {
+            transform: scale(1.05);
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(231, 76, 60, 0.95);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+        
+        .image-box:hover .delete-btn {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .delete-btn:hover {
+            background: #c0392b;
+            transform: scale(1.1);
+        }
+        
+        /* 浮动控制按钮 - 蓝紫色赛博朋克风格 */
+        .floating-controls {
+            position: absolute;
+            top: 42px; /* 在主标题下方 */
+            right: 6px;
+            display: flex;
+            gap: 6px;
+            z-index: 100;
+        }
+        
+        .control-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 
+                0 2px 8px rgba(138, 43, 226, 0.4),
+                0 0 5px rgba(0, 243, 255, 0.5);
+            background: linear-gradient(90deg, var(--cyber-blue-purple) 0%, var(--cyber-light-purple) 100%);
+            color: white;
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+        }
+        
+        .reset-btn:hover {
+            background: linear-gradient(90deg, var(--cyber-light-purple) 0%, var(--cyber-blue-purple) 100%);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 4px 12px rgba(138, 43, 226, 0.6),
+                0 0 10px rgba(0, 243, 255, 0.7);
+        }
+        
+        /* 底部副标题 - 蓝紫色赛博朋克风格 */
+        .footer-subtitle {
+            height: 32px;
+            background: linear-gradient(90deg, 
+                var(--cyber-blue-purple) 0%, 
+                var(--cyber-light-purple) 50%, 
+                #6a11cb 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+            overflow: hidden;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 
+                0 0 3px rgba(255, 255, 255, 0.8),
+                0 0 5px rgba(173, 216, 230, 0.5);
+            box-shadow: 
+                0 -2px 15px rgba(138, 43, 226, 0.5),
+                inset 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+        
+        .footer-subtitle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, 
+                    transparent 0%, 
+                    rgba(255, 255, 255, 0.1) 50%, 
+                    transparent 100%);
+            animation: scanline 4s linear infinite;
+            animation-delay: 1s;
+        }
+        
+        /* 底部装饰元素 */
+        .footer-decoration {
+            position: absolute;
+            bottom: 0;
+            height: 2px;
+            width: 80%;
+            left: 10%;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                var(--cyber-blue) 50%, 
+                transparent 100%);
+            box-shadow: 0 0 8px var(--cyber-blue);
+        }
+        
+        /* 动画效果 */
+        @keyframes scanline {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        
+        /* 滚动条样式 */
+        .images-container::-webkit-scrollbar {
+            height: 4px;
+        }
+        
+        .images-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 2px;
+        }
+        
+        .images-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 2px;
+        }
+        
+        .images-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .image-box, .upload-box {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .level-header {
+                padding: 0 8px;
+            }
+            
+            .main-header {
+                font-size: 1.1rem;
+                height: 34px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .level-header {
+                padding: 0 6px;
+                height: 28px;
+            }
+            
+            .level-icon {
+                width: 20px;
+                height: 20px;
+                margin-right: 6px;
+                font-size: 0.75rem;
+            }
+            
+            .level-title {
+                font-size: 0.95rem;
+            }
+            
+            .level-count {
+                padding: 1px 6px;
+                font-size: 0.7rem;
+            }
+            
+            .image-box, .upload-box {
+                width: 75px;
+                height: 75px;
+            }
+            
+            .level-content {
+                padding: 4px 8px;
+            }
+            
+            .main-header {
+                height: 30px;
+                font-size: 1rem;
+                text-shadow: 
+                    0 0 4px rgba(255, 255, 255, 0.8),
+                    0 0 8px rgba(173, 216, 230, 0.5);
+            }
+            
+            .footer-subtitle {
+                height: 28px;
+                font-size: 0.85rem;
+                text-shadow: 
+                    0 0 2px rgba(255, 255, 255, 0.8),
+                    0 0 4px rgba(173, 216, 230, 0.5);
+            }
+            
+            .rating-levels {
+                height: calc(100% - 58px); /* 调整移动端高度 */
+            }
+            
+            .floating-controls {
+                top: 36px;
+                right: 4px;
+            }
+            
+            .control-btn {
+                padding: 3px 6px;
+                font-size: 0.7rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .image-box, .upload-box {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .upload-icon {
+                font-size: 1.5rem;
+            }
+            
+            .main-header {
+                font-size: 0.95rem;
+                height: 28px;
+                text-shadow: 
+                    0 0 3px rgba(255, 255, 255, 0.8),
+                    0 0 6px rgba(173, 216, 230, 0.5);
+            }
+            
+            .footer-subtitle {
+                height: 26px;
+                font-size: 0.8rem;
+                text-shadow: 
+                    0 0 2px rgba(255, 255, 255, 0.8),
+                    0 0 4px rgba(173, 216, 230, 0.5);
+            }
+            
+            .rating-levels {
+                height: calc(100% - 54px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 16:9全屏容器 -->
+    <div class="container">
+        <!-- 顶部主标题 -->
+        <div class="main-header">
+            <div class="header-decoration left"></div>
+            评价排名
+            <div class="header-decoration right"></div>
+        </div>
+        
+        <!-- 浮动控制按钮 -->
+        <div class="floating-controls">
+            <button class="control-btn reset-btn" onclick="resetAll()">
+                <span>🗑️</span> 重置
+            </button>
+        </div>
+        
+        <!-- 评级层级 -->
+        <div class="rating-levels">
+            <!-- 夯 -->
+            <div class="level level-0">
+                <div class="level-header">
+                    <div class="level-icon">SS</div>
+                    <div class="level-title">夯爆了</div>
+                    <div class="level-count"><span id="count-0">0</span> 张</div>
+                </div>
+                <div class="level-content">
+                    <div class="images-container" id="images-container-0">
+                        <!-- 上传按钮 -->
+                        <div class="upload-box">
+                            <input type="file" accept="image/*" class="file-input" data-level="0" multiple>
+                            <label class="upload-label">
+                                <div class="upload-icon">+</div>
+                                <div class="upload-text">上传</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 顶级 -->
+            <div class="level level-1">
+                <div class="level-header">
+                    <div class="level-icon">S</div>
+                    <div class="level-title">顶级</div>
+                    <div class="level-count"><span id="count-1">0</span> 张</div>
+                </div>
+                <div class="level-content">
+                    <div class="images-container" id="images-container-1">
+                        <div class="upload-box">
+                            <input type="file" accept="image/*" class="file-input" data-level="1" multiple>
+                            <label class="upload-label">
+                                <div class="upload-icon">+</div>
+                                <div class="upload-text">上传</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 人上人 -->
+            <div class="level level-2">
+                <div class="level-header">
+                    <div class="level-icon">A</div>
+                    <div class="level-title">人上人</div>
+                    <div class="level-count"><span id="count-2">0</span> 张</div>
+                </div>
+                <div class="level-content">
+                    <div class="images-container" id="images-container-2">
+                        <div class="upload-box">
+                            <input type="file" accept="image/*" class="file-input" data-level="2" multiple>
+                            <label class="upload-label">
+                                <div class="upload-icon">+</div>
+                                <div class="upload-text">上传</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- NPC -->
+            <div class="level level-3">
+                <div class="level-header">
+                    <div class="level-icon">B</div>
+                    <div class="level-title">NPC</div>
+                    <div class="level-count"><span id="count-3">0</span> 张</div>
+                </div>
+                <div class="level-content">
+                    <div class="images-container" id="images-container-3">
+                        <div class="upload-box">
+                            <input type="file" accept="image/*" class="file-input" data-level="3" multiple>
+                            <label class="upload-label">
+                                <div class="upload-icon">+</div>
+                                <div class="upload-text">上传</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 拉完了 -->
+            <div class="level level-4">
+                <div class="level-header">
+                    <div class="level-icon">C</div>
+                    <div class="level-title">拉完了</div>
+                    <div class="level-count"><span id="count-4">0</span> 张</div>
+                </div>
+                <div class="level-content">
+                    <div class="images-container" id="images-container-4">
+                        <div class="upload-box">
+                            <input type="file" accept="image/*" class="file-input" data-level="4" multiple>
+                            <label class="upload-label">
+                                <div class="upload-icon">+</div>
+                                <div class="upload-text">上传</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 底部副标题 -->
+        <div class="footer-subtitle">
+            模版由@赵小布提供
+            <div class="footer-decoration"></div>
+        </div>
+    </div>
+
+    <script>
+        // 修复上传功能的bug
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为所有文件输入元素添加事件监听器
+            const fileInputs = document.querySelectorAll('.file-input');
+            
+            fileInputs.forEach(input => {
+                // 直接通过label点击触发input
+                const label = input.parentElement.querySelector('.upload-label');
+                label.addEventListener('click', function(e) {
+                    // 阻止事件冒泡，确保只触发一次
+                    if (e.target === label || e.target.classList.contains('upload-icon') || e.target.classList.contains('upload-text')) {
+                        input.click();
+                    }
+                });
+                
+                // 文件选择变化事件
+                input.addEventListener('change', function(e) {
+                    const level = this.getAttribute('data-level');
+                    const files = e.target.files;
+                    
+                    // 处理每个选择的文件
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        
+                        // 检查是否为图片
+                        if (!file.type.match('image.*')) {
+                            alert('请选择图片文件！');
+                            continue;
+                        }
+                        
+                        // 限制文件大小（可选）
+                        if (file.size > 10 * 1024 * 1024) {
+                            alert('图片大小不能超过10MB！');
+                            continue;
+                        }
+                        
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            addImageToLevel(level, e.target.result);
+                        };
+                        
+                        reader.readAsDataURL(file);
+                    }
+                    
+                    // 重置输入，允许再次选择相同文件
+                    this.value = '';
+                });
+            });
+        });
+        
+        // 添加图片到指定层级
+        function addImageToLevel(level, imageData) {
+            const levelContainer = document.getElementById(`images-container-${level}`);
+            
+            // 创建图片容器
+            const imageBox = document.createElement('div');
+            imageBox.className = 'image-box';
+            
+            // 创建图片元素
+            const img = document.createElement('img');
+            img.className = 'image-preview';
+            img.src = imageData;
+            img.alt = '上传的图片';
+            
+            // 创建删除按钮
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.innerHTML = '×';
+            deleteBtn.addEventListener('click', function() {
+                imageBox.remove();
+                updateImageCount(level);
+            });
+            
+            // 组装元素
+            imageBox.appendChild(img);
+            imageBox.appendChild(deleteBtn);
+            
+            // 将图片容器插入到上传按钮之前
+            const uploadBox = levelContainer.querySelector('.upload-box');
+            levelContainer.insertBefore(imageBox, uploadBox);
+            
+            // 更新图片计数
+            updateImageCount(level);
+        }
+        
+        // 更新图片计数
+        function updateImageCount(level) {
+            const levelContainer = document.getElementById(`images-container-${level}`);
+            const imageBoxes = levelContainer.querySelectorAll('.image-box');
+            const countElement = document.getElementById(`count-${level}`);
+            
+            countElement.textContent = imageBoxes.length;
+        }
+        
+        // 重置所有图片
+        function resetAll() {
+            if (confirm('确定要删除所有图片吗？此操作不可撤销。')) {
+                for (let i = 0; i < 5; i++) {
+                    const container = document.getElementById(`images-container-${i}`);
+                    const imageBoxes = container.querySelectorAll('.image-box');
+                    imageBoxes.forEach(box => box.remove());
+                    updateImageCount(i);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
